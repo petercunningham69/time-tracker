@@ -33,9 +33,6 @@
   .header-left { display: flex; align-items: center; gap: 10px; }
   .header-icon { width: 36px; height: 36px; background: var(--green-light); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: var(--green); font-size: 18px; }
   .header h1 { font-size: 20px; font-weight: 600; }
-  .header-links { display: flex; gap: 8px; flex-wrap: wrap; }
-  .hdr-link { font-size: 12px; color: var(--text-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 99px; border: 0.5px solid var(--border-mid); transition: color 0.15s; }
-  .hdr-link:hover { color: var(--text); }
   .sync-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; padding: 5px 12px; border-radius: 99px; border: 0.5px solid rgba(29,158,117,0.25); color: var(--green); background: var(--green-light); transition: all 0.2s; }
   .sync-badge.syncing { color: var(--amber); background: var(--amber-light); border-color: rgba(186,117,23,0.25); }
   .sync-badge.error   { color: var(--red);   background: var(--red-light);   border-color: rgba(163,45,45,0.25); }
@@ -55,6 +52,8 @@
   .timer-display.running-brics { color: var(--green); }
   .timer-display.running-revit { color: var(--blue); }
   .timer-display.running-web   { color: var(--amber); }
+  .timer-display.paused { color: var(--text-muted); }
+  .paused-label { text-align: center; font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 0.75rem; letter-spacing: 1px; text-transform: uppercase; min-height: 18px; }
   .tz-badge { font-size: 11px; color: var(--text-hint); text-align: center; margin-bottom: 1.25rem; }
   .project-row { margin-bottom: 1rem; }
   .project-row input { width: 100%; padding: 10px 14px; border: 0.5px solid var(--border-mid); border-radius: var(--radius-sm); background: var(--surface2); color: var(--text); font-size: 14px; font-family: var(--font); outline: none; transition: border-color 0.15s; }
@@ -62,7 +61,7 @@
   .project-row input::placeholder { color: var(--text-hint); }
   .project-row input:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn-row { display: flex; gap: 8px; }
-  .btn { flex: 1; padding: 11px 16px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.15s; border: 0.5px solid transparent; font-family: var(--font); }
+  .btn { flex: 1; padding: 11px 10px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: all 0.15s; border: 0.5px solid transparent; font-family: var(--font); }
   .btn:disabled { opacity: 0.45; cursor: not-allowed; }
   .btn-start-brics { background: var(--green); color: #fff; border-color: var(--green); }
   .btn-start-brics:hover:not(:disabled) { background: var(--green-dark); }
@@ -70,9 +69,12 @@
   .btn-start-revit:hover:not(:disabled) { background: var(--blue-dark); }
   .btn-start-web { background: var(--amber); color: #fff; border-color: var(--amber); }
   .btn-start-web:hover:not(:disabled) { background: var(--amber-dark); }
+  .btn-pause { background: var(--surface2); color: var(--text-muted); border-color: var(--border-mid); }
+  .btn-pause:hover:not(:disabled) { color: var(--text); border-color: var(--text-muted); }
+  .btn-pause.active { background: var(--amber-light); color: var(--amber-dark); border-color: rgba(186,117,23,0.4); }
   .btn-stop { background: var(--red-light); color: var(--red); border-color: rgba(163,45,45,0.25); }
   .btn-stop:hover:not(:disabled) { background: rgba(163,45,45,0.15); }
-  .sessions-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem; }
+  .sessions-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md); padding: 1.25rem; }
   .sessions-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px; }
   .sessions-title { font-size: 15px; font-weight: 600; }
   .export-btns { display: flex; gap: 6px; }
@@ -111,10 +113,7 @@
       <div class="header-icon">⏱</div>
       <h1>Time Tracker</h1>
     </div>
-    <div class="header-links">
-      <div class="sync-badge" id="sync-badge">☁ Ready</div>
-      <a href="https://app.smartsheet.eu/sheets/RChHq7gjHWfpQ6jfHwFWv9cJQ3pqQmmx4VcHXxQ1" class="hdr-link" target="_blank">↗ Smartsheet</a>
-    </div>
+    <div class="sync-badge" id="sync-badge">☁ Ready</div>
   </div>
 
   <div class="app-tabs">
@@ -131,11 +130,13 @@
 
   <div class="timer-card">
     <div class="timer-display" id="timer-display">00:00:00</div>
+    <div class="paused-label" id="paused-label"></div>
     <div class="tz-badge">🕐 Dublin time: <span id="dublin-clock">--:--:--</span></div>
     <div class="project-row"><input type="text" id="project-input" placeholder="Project / task name (optional)" /></div>
     <div class="btn-row">
       <button class="btn btn-start-brics" id="btn-start" onclick="startTimer()">▶ Start</button>
-      <button class="btn btn-stop"        id="btn-stop"  onclick="stopTimer()" disabled>⏸ Stop &amp; save</button>
+      <button class="btn btn-pause"       id="btn-pause" onclick="pauseTimer()" disabled>⏸ Pause</button>
+      <button class="btn btn-stop"        id="btn-stop"  onclick="stopTimer()"  disabled>■ Stop &amp; save</button>
     </div>
   </div>
 
@@ -167,7 +168,11 @@ const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbx9_WYuTELzp-plHlc31
 const STORAGE_KEY = 'cad_tracker_sessions_v1';
 const SYNCED_KEY  = 'cad_tracker_synced_ids';
 
-let startTime = null, elapsed = 0, timerInterval = null;
+let timerInterval = null;
+let elapsed = 0;        // total active seconds
+let pausedAt = null;    // timestamp when paused
+let isPaused = false;
+let sessionStartDate = null; // Dublin-formatted start date/time
 let sessions = [], syncedIds = new Set();
 let currentApp = 'bricscad', sessionFilter = 'all';
 
@@ -177,7 +182,6 @@ const appConfig = {
   website:  { label: 'Website Work', startClass: 'btn-start-web',   runClass: 'running-web',   badgeClass: 'badge-web',   tabActive: 'active-web'   }
 };
 
-// Dublin time helpers
 function dublinDate(d)      { return new Intl.DateTimeFormat('en-IE',{timeZone:TZ,day:'2-digit',month:'short',year:'numeric'}).format(d); }
 function dublinDateShort(d) { return new Intl.DateTimeFormat('en-IE',{timeZone:TZ,day:'2-digit',month:'short'}).format(d); }
 function dublinTime(d)      { return new Intl.DateTimeFormat('en-IE',{timeZone:TZ,hour:'2-digit',minute:'2-digit'}).format(d); }
@@ -190,7 +194,6 @@ function isTodayDublin(iso) {
 setInterval(() => { document.getElementById('dublin-clock').textContent = dublinClock(new Date()); }, 1000);
 document.getElementById('dublin-clock').textContent = dublinClock(new Date());
 
-// Storage
 function load() {
   try { sessions  = JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]').map(s=>({...s,app:s.app||'bricscad'})); } catch(e){ sessions=[]; }
   try { syncedIds = new Set(JSON.parse(localStorage.getItem(SYNCED_KEY)||'[]')); } catch(e){ syncedIds=new Set(); }
@@ -200,60 +203,50 @@ function save() {
   localStorage.setItem(SYNCED_KEY,  JSON.stringify([...syncedIds]));
 }
 
-// Sync badge
-function setSyncBadge(state, msg) {
+function setSyncBadge(state) {
   const el = document.getElementById('sync-badge');
-  if (state === 'syncing') { el.className='sync-badge syncing'; el.textContent='↻ Syncing…'; }
-  else if (state === 'ok')  { el.className='sync-badge'; el.textContent='☁ Synced ✓'; }
-  else if (state === 'error'){ el.className='sync-badge error'; el.textContent='✕ Sync failed'; }
-  else { el.className='sync-badge'; el.textContent='☁ Ready'; }
+  if      (state==='syncing') { el.className='sync-badge syncing'; el.textContent='↻ Syncing…'; }
+  else if (state==='ok')      { el.className='sync-badge'; el.textContent='☁ Synced ✓'; }
+  else if (state==='error')   { el.className='sync-badge error'; el.textContent='✕ Sync failed'; }
+  else                        { el.className='sync-badge'; el.textContent='☁ Ready'; }
 }
 
-// Google Sheets sync
 async function syncToSheets(session) {
   setSyncBadge('syncing');
   try {
     const d = new Date(session.date);
-    const payload = {
-      sessions: [{
-        app:     appConfig[session.app].label,
-        date:    session.dublinDate || dublinDate(d),
-        time:    session.dublinTime || dublinTime(d),
-        project: session.project,
-        mins:    Math.round(session.secs / 60),
-        hrs:     (session.secs / 3600).toFixed(2)
-      }]
-    };
-    const res = await fetch(SHEETS_URL, {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    });
+    const payload = { sessions: [{
+      app:     appConfig[session.app].label,
+      date:    session.dublinDate || dublinDate(d),
+      time:    session.dublinTime || dublinTime(d),
+      project: session.project,
+      mins:    Math.round(session.secs / 60),
+      hrs:     (session.secs / 3600).toFixed(2)
+    }]};
+    const res  = await fetch(SHEETS_URL, { method:'POST', body:JSON.stringify(payload) });
     const data = await res.json();
-    if (data.status === 'ok') {
-      syncedIds.add(session.id);
-      save();
-      setSyncBadge('ok');
-      return true;
-    }
+    if (data.status === 'ok') { syncedIds.add(session.id); save(); setSyncBadge('ok'); return true; }
     throw new Error('Bad response');
-  } catch(e) {
-    setSyncBadge('error');
-    return false;
-  }
+  } catch(e) { setSyncBadge('error'); return false; }
 }
 
 function showToast(msg) {
   const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),3000);
 }
+
 function fmt(secs) {
   const h=Math.floor(secs/3600),m=Math.floor((secs%3600)/60),s=secs%60;
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
-function fmtDur(secs) { const h=Math.floor(secs/3600),m=Math.floor((secs%3600)/60); return h>0?`${h}h ${m}m`:`${m}m`; }
+function fmtDur(secs){ const h=Math.floor(secs/3600),m=Math.floor((secs%3600)/60); return h>0?`${h}h ${m}m`:`${m}m`; }
+
+function setRunClass() {
+  document.getElementById('timer-display').className = 'timer-display ' + (isPaused ? 'paused' : appConfig[currentApp].runClass);
+}
 
 function switchApp(app) {
-  if(timerInterval){showToast('Stop current session before switching');return;}
+  if(timerInterval||isPaused){showToast('Stop current session before switching');return;}
   currentApp=app;
   Object.keys(appConfig).forEach(k=>{
     document.getElementById('tab-'+k).className='app-tab'+(k===app?' '+appConfig[k].tabActive:'');
@@ -272,46 +265,89 @@ function setFilter(f) {
 }
 
 function startTimer() {
-  startTime=Date.now()-elapsed*1000;
-  timerInterval=setInterval(()=>{
-    elapsed=Math.floor((Date.now()-startTime)/1000);
-    document.getElementById('timer-display').textContent=fmt(elapsed);
-    document.getElementById('timer-display').className='timer-display '+appConfig[currentApp].runClass;
-  },1000);
-  document.getElementById('btn-start').disabled=true;
-  document.getElementById('btn-stop').disabled=false;
-  document.getElementById('project-input').disabled=true;
+  const now = new Date();
+  if (!sessionStartDate) {
+    // Fresh start — record the start date/time in Dublin time
+    sessionStartDate = { date: dublinDate(now), time: dublinTime(now), iso: now.toISOString() };
+  }
+  isPaused = false;
+  document.getElementById('paused-label').textContent = '';
+  const startTime = Date.now() - elapsed * 1000;
+  timerInterval = setInterval(() => {
+    elapsed = Math.floor((Date.now() - startTime) / 1000);
+    document.getElementById('timer-display').textContent = fmt(elapsed);
+    setRunClass();
+  }, 1000);
+  document.getElementById('btn-start').disabled  = true;
+  document.getElementById('btn-pause').disabled  = false;
+  document.getElementById('btn-stop').disabled   = false;
+  document.getElementById('project-input').disabled = true;
+}
+
+function pauseTimer() {
+  if (isPaused) {
+    // Resume
+    isPaused = false;
+    document.getElementById('btn-pause').textContent = '⏸ Pause';
+    document.getElementById('btn-pause').classList.remove('active');
+    document.getElementById('paused-label').textContent = '';
+    document.getElementById('btn-start').disabled = true;
+    const startTime = Date.now() - elapsed * 1000;
+    timerInterval = setInterval(() => {
+      elapsed = Math.floor((Date.now() - startTime) / 1000);
+      document.getElementById('timer-display').textContent = fmt(elapsed);
+      setRunClass();
+    }, 1000);
+  } else {
+    // Pause
+    clearInterval(timerInterval); timerInterval = null;
+    isPaused = true;
+    document.getElementById('btn-pause').textContent = '▶ Resume';
+    document.getElementById('btn-pause').classList.add('active');
+    document.getElementById('paused-label').textContent = 'Paused';
+    document.getElementById('timer-display').className = 'timer-display paused';
+  }
 }
 
 async function stopTimer() {
-  clearInterval(timerInterval); timerInterval=null;
-  document.getElementById('timer-display').className='timer-display';
-  if(elapsed<5){
-    elapsed=0; document.getElementById('timer-display').textContent='00:00:00';
-    document.getElementById('btn-start').disabled=false;
-    document.getElementById('btn-stop').disabled=true;
-    document.getElementById('project-input').disabled=false;
+  clearInterval(timerInterval); timerInterval = null;
+  isPaused = false;
+  document.getElementById('timer-display').className = 'timer-display';
+  document.getElementById('paused-label').textContent = '';
+  document.getElementById('btn-pause').textContent = '⏸ Pause';
+  document.getElementById('btn-pause').classList.remove('active');
+
+  if (elapsed < 5) {
+    elapsed = 0; sessionStartDate = null;
+    document.getElementById('timer-display').textContent = '00:00:00';
+    document.getElementById('btn-start').disabled  = false;
+    document.getElementById('btn-pause').disabled  = true;
+    document.getElementById('btn-stop').disabled   = true;
+    document.getElementById('project-input').disabled = false;
     return;
   }
-  const now=new Date();
-  const project=document.getElementById('project-input').value.trim()||appConfig[currentApp].label+' session';
-  const session={
-    id: Date.now(), date: now.toISOString(),
-    dublinDate: dublinDate(now), dublinTime: dublinTime(now),
+
+  const project = document.getElementById('project-input').value.trim() || appConfig[currentApp].label + ' session';
+  const session = {
+    id:         Date.now(),
+    date:       sessionStartDate ? sessionStartDate.iso : new Date().toISOString(),
+    dublinDate: sessionStartDate ? sessionStartDate.date : dublinDate(new Date()),
+    dublinTime: sessionStartDate ? sessionStartDate.time : dublinTime(new Date()),
     project, secs: elapsed, app: currentApp
   };
   sessions.unshift(session); save();
-  elapsed=0;
-  document.getElementById('timer-display').textContent='00:00:00';
-  document.getElementById('btn-start').disabled=false;
-  document.getElementById('btn-stop').disabled=true;
-  document.getElementById('project-input').disabled=false;
-  document.getElementById('project-input').value='';
+
+  elapsed = 0; sessionStartDate = null;
+  document.getElementById('timer-display').textContent = '00:00:00';
+  document.getElementById('btn-start').disabled  = false;
+  document.getElementById('btn-pause').disabled  = true;
+  document.getElementById('btn-stop').disabled   = true;
+  document.getElementById('project-input').disabled = false;
+  document.getElementById('project-input').value = '';
   renderSessions(); updateStats();
 
-  // Auto sync to Google Sheets
   const ok = await syncToSheets(session);
-  showToast(ok ? '✓ Session saved & synced to Google Sheets' : 'Session saved locally — sync failed, try again later');
+  showToast(ok ? '✓ Session saved & synced to Google Sheets' : 'Session saved locally — sync failed');
   renderSessions();
 }
 
@@ -364,8 +400,7 @@ function exportICS() {
     lines.push('BEGIN:VEVENT',`UID:tracker-${s.id}@timetracker`,`DTSTART:${toICSDate(start)}`,`DTEND:${toICSDate(end)}`,`SUMMARY:[${cfg.label}] ${s.project}`,`DESCRIPTION:${cfg.label} — ${Math.round(s.secs/60)} min`,'END:VEVENT');
   });
   lines.push('END:VCALENDAR');
-  dl(lines.join('\r\n'),'sessions.ics','text/calendar');
-  showToast('ICS downloaded — open in Outlook to import');
+  dl(lines.join('\r\n'),'sessions.ics','text/calendar'); showToast('ICS downloaded — open in Outlook to import');
 }
 
 function exportCSV() {
@@ -375,8 +410,7 @@ function exportCSV() {
     const d=new Date(s.date),cfg=appConfig[s.app]||appConfig.bricscad;
     rows.push([cfg.label,s.dublinDate||dublinDate(d),s.dublinTime||dublinTime(d),s.project,Math.round(s.secs/60),(s.secs/3600).toFixed(2)]);
   });
-  dl(rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n'),'hours.csv','text/csv');
-  showToast('CSV downloaded');
+  dl(rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n'),'hours.csv','text/csv'); showToast('CSV downloaded');
 }
 
 function dl(content,filename,type){
